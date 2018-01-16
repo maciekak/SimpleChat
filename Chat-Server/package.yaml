@@ -23,6 +23,8 @@ dependencies:
 - base >= 4.7 && < 5
 - websockets >= 0.12
 - text
+- HUnit
+- QuickCheck
 library:
   source-dirs: src
 
