@@ -28,6 +28,22 @@ removeClient client clients = filter ((/= fst client) . fst) clients
 clientExists :: Client -> ServerState -> Bool
 clientExists client clients = any ((== fst client) . fst) clients
 
+sendMessageWithoutRage :: Text -> Text -> MVar ServerState -> IO()
+sendMessageWithoutRage user msg state = 
+    readMVar state >>= broadcast
+        (user `mappend` ": " `mappend` T.replace "hate" "love" msg)
+
+sendMessageWithForceLovingCats :: Text -> Text -> MVar ServerState -> IO()
+sendMessageWithForceLovingCats user msg state =
+    readMVar state >>= broadcast
+        (user `mappend` ": " `mappend` T.replace "love dog" "love cat" msg)
+
+checkIfContainsRage :: Text -> Bool
+checkIfContainsRage msg = T.isInfixOf "hate" msg
+
+checkIfNotLovingCats :: Text -> Bool
+checkIfNotLovingCats msg = T.isInfixOf "love dog" msg
+
 broadcast :: Text -> ServerState -> IO()
 broadcast message clients = do
     T.putStrLn message
@@ -74,5 +90,8 @@ application state pending = do
 talk :: WS.Connection -> MVar ServerState -> Client -> IO ()
 talk conn state (user, _) = forever $ do
     msg <- WS.receiveData conn
-    readMVar state >>= broadcast
-        (user `mappend` ": " `mappend` msg)
+    case msg of
+        _   | checkIfContainsRage msg -> sendMessageWithoutRage user msg state
+            | checkIfNotLovingCats msg ->sendMessageWithForceLovingCats user msg state
+            | otherwise -> readMVar state >>= broadcast
+                (user `mappend` ": " `mappend` msg)
